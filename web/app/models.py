@@ -4,7 +4,7 @@ from django import forms
 from django.utils import timezone
 from rest_framework import serializers
 from django.contrib.auth.forms import UserCreationForm
-
+from django.forms.models import inlineformset_factory
 class Category(models.Model):
     sub_category = models.ForeignKey('self', on_delete=models.CASCADE, related_name='sub_categories', null=True, blank=True)
     is_sub = models.BooleanField(default=False)
@@ -43,17 +43,12 @@ class Product(models.Model):
     price_sale = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     describe = models.CharField(max_length=300, null=True)
     digital = models.BooleanField(default=False, null=True, blank=False)
-    count39 = models.IntegerField(default=0)
-    count40 = models.IntegerField(default=0)
-    count41 = models.IntegerField(default=0)
     image = models.ImageField(null=True, blank=True)
-    image1 = models.ImageField(null=True, blank=True)
-    image2 = models.ImageField(null=True, blank=True)
-    image3 = models.ImageField(null=True, blank=True)
-    image4 = models.ImageField(null=True, blank=True)
     unit = models.CharField(max_length=50, null=True, blank=True)
     # count = models.IntegerField(default=0)
 
+    # def __str__(self):
+    #     return {self.name} 
     @property
 
     def ImageURL(self):
@@ -62,35 +57,26 @@ class Product(models.Model):
         except:
             url = ''
         return url
-    
-    def ImageURL1(self):
+class Size(models.Model):
+    product = models.ForeignKey(Product, related_name='sizes', on_delete=models.CASCADE)
+    size = models.CharField(max_length=50)
+    quantity = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = ('product', 'size')
+
+    def __str__(self):
+        return f"{self.product.name} - {self.size}"
+
+class ImagesProduct(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    image = models.ImageField(null=True, blank=True)
+    def ImageURL(self):
         try:
-            url = self.image1.url
+            url = self.image.url
         except:
             url = ''
         return url
-    
-    def ImageURL2(self):
-        try:
-            url = self.image2.url
-        except:
-            url = ''
-        return url
-    
-    def ImageURL3(self):
-        try:
-            url = self.image3.url
-        except:
-            url = ''
-        return url
-    
-    def ImageURL4(self):
-        try:
-            url = self.image4.url
-        except:
-            url = ''
-        return url
-    
 class Cart(models.Model):
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -143,20 +129,21 @@ class AddProduct(forms.ModelForm):
     # count = forms.IntegerField(widget=forms.HiddenInput(), initial=0)
     class Meta:
         model = Product
-        fields = ['name', 'category', 'price', 'price_sale', 'describe', 'digital', 'image', 'image1', 
-                  'image2', 'image3', 'image4', 'unit','count39','count40','count41']
+        fields = ['name', 'category', 'price', 'price_sale', 'describe', 'digital', 'image','unit']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'describe': forms.Textarea(attrs={'class': 'form-control', 'style': 'height: 150px'}),
             'price': forms.TextInput(attrs={'class': 'form-control'}),
             'price_sale': forms.TextInput(attrs={'class': 'form-control'}),
-            'category': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input, d-flex'}),
+            'category': forms.CheckboxSelectMultiple(attrs={'class': ''}),
             'unit': forms.TextInput(attrs={'class': 'form-control'}),
-            'count39': forms.TextInput(attrs={'class': 'form-control'}),
-            'count40': forms.TextInput(attrs={'class': 'form-control'}),
-            'count41': forms.TextInput(attrs={'class': 'form-control'}),
         }
+class SizeForm(forms.ModelForm):
+    class Meta:
+        model = Size
+        fields = ['size', 'quantity']
 
+SizeFormSet = inlineformset_factory(Product, Size, form=SizeForm, extra=1, can_delete=True)
 class AddCategory(forms.ModelForm):
     class Meta:
         model = Category
